@@ -8,7 +8,7 @@ import pygame as pg
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-pygame.display.set_caption("射的ゲーム - ベース版")
+pygame.display.set_caption("射的ゲーム")
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
@@ -22,11 +22,10 @@ font_large  = pygame.font.SysFont(None, 70)
 target_radius = 30
 target_x = random.randint(target_radius, WIDTH - target_radius)
 target_y = random.randint(target_radius, HEIGHT - target_radius)
-
 def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
     """
     オブジェクトが画面内or画面外を判定し，真理値タプルを返す関数
-    引数：こうかとんや爆弾，ビームなどのRect
+    引数：的のRect
     戻り値：横方向，縦方向のはみ出し判定結果（画面内：True／画面外：False）
     """
     yoko, tate = True, True
@@ -35,6 +34,20 @@ def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
     if obj_rct.top < 0 or HEIGHT < obj_rct.bottom:
         tate = False
     return yoko, tate
+
+
+def display_score(screen:pygame.surface, font:pygame.font, current_score: int):
+    if current_score >= 1000:
+        score_text = font.render(f"Score: {current_score}", True, (232, 60, 132))
+    elif current_score >= 500:
+        score_text = font.render(f"Score: {current_score}", True, (255, 255, 0))
+    elif current_score >= 300:    
+        score_text = font.render(f"Score: {current_score}", True, (255, 0, 0))
+    elif current_score >= 100:
+        score_text = font.render(f"Score: {current_score}", True, (0, 255, 0))
+    else:
+        score_text = font.render(f"Score: {current_score}", True, (0, 0, 0))
+    screen.blit(score_text, (10, 10))
 
 
 def time_desiplay_count(screen:pygame.surface, font_normal:pygame.font, font_large:pygame.font, start_time_ms:int, time_limit_ms:int)-> bool:
@@ -74,7 +87,6 @@ class ScreenManager:
         self.HEIGHT = HEIGHT
         self.title_font = title_font
         self.message_font = message_font
-
 
         # 背景画像の読み込み
         try:
@@ -222,7 +234,7 @@ class Move_enemy(pg.sprite.Sprite):
 
     def __init__(self):
         super().__init__()
-        self.vx = random.choice([-1, 1]) * random.uniform(2, 6)
+        self.vx = random.choice([-1, 1]) * random.uniform(5, 10)
         self.vy = 1
         if self.vx < 0: # 向き変更
             self.image = pg.transform.flip(self.image, True, False)
@@ -232,7 +244,7 @@ class Move_enemy(pg.sprite.Sprite):
 
     def update(self):
         """
-        爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
+        的を速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
@@ -330,9 +342,6 @@ def main():
                         enemy.kill()
                         enemies.add(Move_enemy())
 
-            # デバック用ーーーーーーーーーーーーーーーーーーーーーーーー
-            if score >= 100:
-                game_state = "finish"
 
             if game_state == "finish":
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
@@ -359,6 +368,7 @@ def main():
             # 背景の設定
             screen.blit(bg_img, [0, 0])
             count_display_time = time_desiplay_count(screen, font_normal, font_large, start_time_ms, time_limit_ms)
+            score_display = display_score(screen, font, score)
             for mato in mato_list:  # 1番最初の的の表示 game_stateがplayingになったら的を表示する
                 mato.update()
                 mato.draw(screen)

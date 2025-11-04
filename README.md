@@ -6,11 +6,7 @@
 
 ## ゲームの概要
 * 射的ゲーム
-<<<<<<< HEAD
-=======
-* 参考URL：[サイトタイトル](https://www.hoge.com/)
 * 参考URL:[Pygameのtime.Clock.tick_busy_loopを使った例題](https://runebook.dev/ja/articles/pygame/ref/time/pygame.time.Clock.tick_busy_loop)(制限時間のアルゴリズムに使った)
->>>>>>> C0A24139/time
 
 ## ゲームの遊び方
 * マウスでレティクルを操作し、クリックで射撃
@@ -47,8 +43,12 @@
 =======
 * 制限時間・スコア管理（髙橋孝介）：　
 * 的の出現方法（）：
+<<<<<<< HEAD
 * 制限時間のタイマーと時間が少なくなった時に色が変わって強調されるようにした。
 >>>>>>> C0A24139/time
+=======
+* スコアを関数で表示するようにした
+>>>>>>> C0A24139/score
 
 ### ToDo
 - [〇] 背景画像の導入
