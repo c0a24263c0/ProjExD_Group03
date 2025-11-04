@@ -2,6 +2,7 @@ import os
 import pygame
 import random
 import sys
+import pygame as pg
 
 # 初期化
 pygame.init()
@@ -75,13 +76,100 @@ class ScreenManager:
 
 screen_manager = ScreenManager(screen, WIDTH, HEIGHT, title_font, message_font)
 
-# 的の設定
-target_radius = 30
-target_x = random.randint(target_radius, WIDTH - target_radius)
-target_y = random.randint(target_radius, HEIGHT - target_radius)
 
 # スコア
 score = 0
+mato_num = 10
+
+class Mato:
+    """
+    的に関するクラス
+    """
+    img = pg.transform.scale(pg.image.load("fig/1.png").convert_alpha(), (100, 100))
+    used_positions = set()
+
+    def __init__(self, radius):
+        """
+        的を生成するための関数
+        引数：的の半径
+        visible:的に命中した際に表示を切り替えるためのもの
+        """
+        self.radius = radius
+        self.cols = 8  # 横方向分割
+        self.rows = 6  # 縦方向分割
+        cell_w = WIDTH // self.cols
+        cell_h = HEIGHT // self.rows
+
+        # 使用可能な範囲
+        available_positions = [
+            (col, row)
+            for col in range(self.cols)
+            for row in range(1, self.rows)
+            if (col, row) not in Mato.used_positions
+        ]
+
+        # もしすべて埋まっていたらリセット
+        if not available_positions:
+            Mato.used_positions.clear()
+            available_positions = [
+                (col, row)
+                for col in range(self.cols)
+                for row in range(1, self.rows)
+            ]
+
+        col, row = random.choice(available_positions)
+        Mato.used_positions.add((col, row))
+
+        self.x = col * cell_w + cell_w // 2
+        self.y = row * cell_h + cell_h // 2
+
+        self.last_update = pygame.time.get_ticks()
+        self.visible = True
+
+    def update(self):
+        """
+        一定時間経過したら新しい位置に移動するための関数
+        """
+        now = pygame.time.get_ticks()
+        broke_time = now - self.last_update
+        if  broke_time >= 3000:
+            self.visible = True
+            self.last_update = now
+
+            cell_w = WIDTH // self.cols
+            cell_h = HEIGHT // self.rows
+
+            available_positions = [
+                (col, row)
+                for col in range(self.cols)
+                for row in range(1, self.rows)
+                if (col, row) not in Mato.used_positions
+            ]
+
+            if not available_positions:
+                Mato.used_positions.clear()
+                available_positions = [
+                    (col, row)
+                    for col in range(self.cols)
+                    for row in range(1, self.rows)
+                ]
+
+            col, row = random.choice(available_positions)
+            Mato.used_positions.add((col, row))
+
+            self.x = col * cell_w + cell_w // 2
+            self.y = row * cell_h + cell_h // 2
+
+    def draw(self, surface):
+        """
+        的を描画する関数
+        """
+        if self.visible:
+            mato_rect = Mato.img.get_rect(center=(self.x, self.y))
+            surface.blit(Mato.img, mato_rect)
+
+
+mato_list = [Mato(50) for _ in range(mato_num)]
 
 # ゲームの状態管理
 game_state = "start" # ゲームの状況
@@ -90,6 +178,8 @@ game_state = "start" # ゲームの状況
 # メインループ
 running = True
 while running:
+    screen.fill((200, 220, 255))
+
     # イベント処理
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -104,40 +194,41 @@ while running:
         # クリックで命中判定
         if game_state == "playing" and event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = pygame.mouse.get_pos()
-            distance = ((mx - target_x) ** 2 + (my - target_y) ** 2) ** 0.5
-            if distance <= target_radius:
-                score += 1
+            for mato in mato_list:
+                distance = ((mx - mato.x) ** 2 + (my - mato.y) ** 2) ** 0.5
+                if distance <= mato.radius and mato.visible:  # カーソルが的の中にあったら命中とする
+                    score += 1
+                    mato.visible = False  # スコアを加算して的を見えなくする
 
-                # デバック用
-                if score == 10:
-                    game_state = "finish"
+        # デバック用ーーーーーーーーーーーーーーーーーーーーーーーー
+        if score == 10:
+            game_state = "finish"
 
-                # 的をランダムに再配置
-                target_x = random.randint(target_radius, WIDTH - target_radius)
-                target_y = random.randint(target_radius, HEIGHT - target_radius) 
+
 
         if game_state == "finish":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 score = 0
-                game_state = "playing"  # enter でリトライ 
+                game_state = "playing"  # r でリトライ 
 
     # ゲームの状態による画面表示の変化
+    # スタート状態
     if game_state == "start":
         screen_manager.start_screen()  # スタート画面の表示
             
+    # ゲーム進行中の状態
     elif game_state == "playing":
         screen.fill((200, 220, 255)) # 背景色（水色）
-        
-        # 的の描画
-        pygame.draw.circle(screen, (255, 0, 0), (target_x, target_y), target_radius)
-        pygame.draw.circle(screen, (255, 255, 255), (target_x, target_y), target_radius // 2)
+        for mato in mato_list:  # 1番最初の的の表示 game_stateがplayingになったら的を表示する
+            mato.update()
+            mato.draw(screen)
 
-        # スコア表示
-        score_text = font.render(f"Score: {score}", True, (0, 0, 0))
-        screen.blit(score_text, (10, 10))
-
+    # ゲーム終了状態
     elif game_state == "finish":
         screen_manager.finish_screen(score)
+        
+
+    
 
     pygame.display.flip()
     clock.tick(60)
